@@ -1,0 +1,35 @@
+# API keys and environment variables
+.env
+.env.*
+
+# Python virtual environment
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Node dependencies
+node_modules/
+frontend/node_modules/
+
+# Vite build
+frontend/dist/
+
+# Editor files
+.vscode/
+.cursor/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# FAISS generated database
+vectorstore/
+
+# Medical source PDFs / large data files
+data/
