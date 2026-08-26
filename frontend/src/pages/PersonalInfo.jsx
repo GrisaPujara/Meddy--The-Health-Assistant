@@ -1,8 +1,12 @@
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { getCurrentUser, updateCurrentUser } from "../utils/userStore";
 
 function PersonalInfo() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isEdit = searchParams.get("edit") === "1";
+  const nextQuery = isEdit ? "?edit=1" : "";
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -10,6 +14,18 @@ function PersonalInfo() {
     age: "",
     gender: "",
   });
+
+  useEffect(() => {
+    const user = getCurrentUser();
+    const saved = user.personalInfo || {};
+
+    setFormData({
+      fullName: saved.fullName || user.fullName || "",
+      dob: saved.dob || "",
+      age: saved.age || "",
+      gender: saved.gender || "",
+    });
+  }, []);
 
   // -----------------------------------------
   // Handle input changes
@@ -60,13 +76,13 @@ function PersonalInfo() {
     e.preventDefault();
 
     // Save personal information
-    localStorage.setItem(
-      "personalInfo",
-      JSON.stringify(formData)
-    );
+    updateCurrentUser({
+      fullName: formData.fullName,
+      personalInfo: formData,
+    });
 
     // Go to Location page
-    navigate("/location");
+    navigate(`/location${nextQuery}`);
   };
 
   return (
@@ -87,7 +103,9 @@ function PersonalInfo() {
         </h2>
 
         <p className="text-center text-gray-500 mt-2">
-          Tell us a little about yourself.
+          {isEdit
+            ? "Edit your details. Your saved information is already filled in."
+            : "Tell us a little about yourself."}
         </p>
 
         {/* Form */}
@@ -201,7 +219,7 @@ function PersonalInfo() {
             type="submit"
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold transition"
           >
-            Continue →
+            {isEdit ? "Save and continue →" : "Continue →"}
           </button>
 
         </form>

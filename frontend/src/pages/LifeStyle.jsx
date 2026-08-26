@@ -1,8 +1,12 @@
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { getCurrentUser, updateCurrentUser } from "../utils/userStore";
 
 function Lifestyle() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isEdit = searchParams.get("edit") === "1";
+  const nextQuery = isEdit ? "?edit=1" : "";
 
   const [lifestyle, setLifestyle] = useState({
     foodPreference: "",
@@ -10,6 +14,16 @@ function Lifestyle() {
     fitnessGoal: "",
     familyMembers: "",
   });
+
+  useEffect(() => {
+    const saved = getCurrentUser().lifestyle || {};
+    setLifestyle({
+      foodPreference: saved.foodPreference || "",
+      activityLevel: saved.activityLevel || "",
+      fitnessGoal: saved.fitnessGoal || "",
+      familyMembers: saved.familyMembers || "",
+    });
+  }, []);
 
   const handleChange = (e) => {
     setLifestyle({
@@ -22,7 +36,14 @@ function Lifestyle() {
     e.preventDefault();
 
     // Save Lifestyle Data
-    localStorage.setItem("lifestyle", JSON.stringify(lifestyle));
+    const current = getCurrentUser();
+    updateCurrentUser({
+      lifestyle,
+      groceryPlanner: {
+        ...(current.groceryPlanner || {}),
+        foodPreference: lifestyle.foodPreference,
+      },
+    });
 
     // Finish setup
     navigate("/dashboard");
@@ -102,7 +123,17 @@ function Lifestyle() {
           <div className="flex gap-4">
             <button
               type="button"
-              onClick={() => navigate("/health-details")}
+              onClick={() => {
+                const current = getCurrentUser();
+                updateCurrentUser({
+                  lifestyle,
+                  groceryPlanner: {
+                    ...(current.groceryPlanner || {}),
+                    foodPreference: lifestyle.foodPreference,
+                  },
+                });
+                navigate(`/health-details${nextQuery}`);
+              }}
               className="w-1/2 bg-gray-300 hover:bg-gray-400 py-3 rounded-xl font-semibold"
             >
               ← Back
@@ -112,7 +143,7 @@ function Lifestyle() {
               type="submit"
               className="w-1/2 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold"
             >
-              Finish Setup 🌿
+              {isEdit ? "Save changes" : "Finish Setup 🌿"}
             </button>
           </div>
 

@@ -3,11 +3,17 @@ from fastapi import APIRouter, HTTPException
 from backend.schemas.models import (
     ChatRequest,
     ChatResponse,
+    FamilyCreateRequest,
+    FamilyJoinRequest,
+    FamilyPersonRequest,
     GroceryPlanRequest,
     NutritionPlanRequest,
+    ReminderCreateRequest,
+    ReminderUpdateRequest,
 )
 from backend.services.retriever import Retriever
 from backend.services.llm import LLMService
+from backend.services import family_store
 
 router = APIRouter()
 
@@ -50,6 +56,88 @@ def nutrition_plan(request: NutritionPlanRequest):
     return plan
 
 
+@router.get("/family")
+def get_family(email: str):
+    family = family_store.get_family(email)
+    if not family:
+        return {"family": None}
+    return {"family": family}
+
+
+@router.post("/family")
+def create_family(request: FamilyCreateRequest):
+    try:
+        family = family_store.create_family(
+            request.email,
+            request.displayName,
+            request.familyName,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"family": family}
+
+
+@router.post("/family/join")
+def join_family(request: FamilyJoinRequest):
+    try:
+        family = family_store.join_family(
+            request.email,
+            request.displayName,
+            request.inviteCode,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"family": family}
+
+
+@router.post("/family/leave")
+def leave_family(request: FamilyCreateRequest):
+    family_store.leave_family(request.email)
+    return {"family": None}
+
+
+@router.post("/family/people")
+def add_family_person(request: FamilyPersonRequest):
+    try:
+        family = family_store.add_person(request.email, request.name, request.role)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"family": family}
+
+
+@router.post("/family/reminders")
+def create_reminder(request: ReminderCreateRequest):
+    if request.type not in {"medicine", "checkup", "yearly"}:
+        raise HTTPException(status_code=400, detail="Reminder type must be medicine, checkup, or yearly.")
+    try:
+        family = family_store.add_reminder(request.email, request.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"family": family}
+
+
+@router.patch("/family/reminders/{reminder_id}")
+def patch_reminder(reminder_id: str, request: ReminderUpdateRequest):
+    try:
+        family = family_store.update_reminder(
+            request.email,
+            reminder_id,
+            request.model_dump(exclude={"email"}),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"family": family}
+
+
+@router.delete("/family/reminders/{reminder_id}")
+def remove_reminder(reminder_id: str, email: str):
+    try:
+        family = family_store.delete_reminder(email, reminder_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"family": family}
+
+
 @router.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest):
 
@@ -75,6 +163,6 @@ def chat(request: ChatRequest):
             sources.append(page)
 
     return ChatResponse(
-        answer=answer,
+        answer=answer if isinstance(answer, str) else str(answer),
         sources=sources
     )

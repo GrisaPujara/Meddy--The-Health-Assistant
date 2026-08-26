@@ -33,3 +33,6 @@ vectorstore/
 
 # Medical source PDFs / large data files
 data/
+
+# Family reminder data
+backend/data/*.json

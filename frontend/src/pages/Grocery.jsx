@@ -1,25 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { isLoggedIn, loadProfileData, updateCurrentUser } from "../utils/userStore";
 
 const DEFAULT_MEMBERS = [
   { role: "You", name: "", age: "", gender: "", medicalConditions: "", included: true },
-  { role: "Mother", name: "", age: "", gender: "Female", medicalConditions: "", included: true },
-  { role: "Father", name: "", age: "", gender: "Male", medicalConditions: "", included: true },
+  { role: "Mother", name: "", age: "", gender: "Female", medicalConditions: "", included: false },
+  { role: "Father", name: "", age: "", gender: "Male", medicalConditions: "", included: false },
   { role: "Son", name: "", age: "", gender: "Male", medicalConditions: "", included: false },
   { role: "Daughter", name: "", age: "", gender: "Female", medicalConditions: "", included: false },
-  { role: "Grandfather", name: "", age: "", gender: "Male", medicalConditions: "", included: true },
-  { role: "Grandmother", name: "", age: "", gender: "Female", medicalConditions: "", included: true },
+  { role: "Grandfather", name: "", age: "", gender: "Male", medicalConditions: "", included: false },
+  { role: "Grandmother", name: "", age: "", gender: "Female", medicalConditions: "", included: false },
 ];
 
-function readJson(key) {
-  try {
-    return JSON.parse(localStorage.getItem(key)) || {};
-  } catch {
-    return {};
-  }
-}
-
 function Grocery() {
+  const navigate = useNavigate();
   const [location, setLocation] = useState({
     country: "India",
     state: "",
@@ -28,17 +22,24 @@ function Grocery() {
   });
   const [budget, setBudget] = useState("");
   const [foodPreference, setFoodPreference] = useState("Vegetarian");
+  const [planMode, setPlanMode] = useState("solo");
   const [members, setMembers] = useState(DEFAULT_MEMBERS);
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const savedLocation = readJson("location");
-    const personalInfo = readJson("personalInfo");
-    const healthDetails = readJson("healthDetails");
-    const lifestyle = readJson("lifestyle");
-    const savedGrocery = readJson("groceryPlanner");
+    if (!isLoggedIn()) {
+      navigate("/login");
+      return;
+    }
+
+    const profile = loadProfileData();
+    const savedLocation = profile.location || {};
+    const personalInfo = profile.personalInfo || {};
+    const healthDetails = profile.healthDetails || {};
+    const lifestyle = profile.lifestyle || {};
+    const savedGrocery = profile.groceryPlanner || {};
 
     setLocation({
       country: savedLocation.country || savedGrocery.country || "India",
@@ -49,33 +50,37 @@ function Grocery() {
 
     setBudget(savedGrocery.budget || "");
     setFoodPreference(
-      savedGrocery.foodPreference || lifestyle.foodPreference || "Vegetarian"
+      lifestyle.foodPreference || savedGrocery.foodPreference || "Vegetarian"
     );
+    setPlanMode(savedGrocery.planMode || "solo");
 
-    if (savedGrocery.members?.length) {
-      setMembers(savedGrocery.members);
-      return;
-    }
+    const baseMembers = savedGrocery.members?.length
+      ? savedGrocery.members
+      : DEFAULT_MEMBERS;
 
-    setMembers((current) =>
-      current.map((member) => {
+    setMembers(
+      baseMembers.map((member) => {
         if (member.role !== "You") return member;
 
         return {
           ...member,
-          name: personalInfo.fullName || "",
-          age: personalInfo.age || "",
-          gender: personalInfo.gender || "",
-          medicalConditions: healthDetails.medicalCondition || "",
+          name: personalInfo.fullName || member.name || "",
+          age: personalInfo.age || member.age || "",
+          gender: personalInfo.gender || member.gender || "",
+          medicalConditions:
+            healthDetails.medicalCondition || member.medicalConditions || "",
           included: true,
         };
       })
     );
-  }, []);
+  }, [navigate]);
 
   const includedCount = useMemo(
-    () => members.filter((member) => member.included).length,
-    [members]
+    () =>
+      planMode === "solo"
+        ? 1
+        : members.filter((member) => member.included).length,
+    [members, planMode]
   );
 
   const handleLocationChange = (e) => {
@@ -98,10 +103,13 @@ function Grocery() {
     setError("");
     setPlan(null);
 
-    const includedMembers = members.filter((member) => member.included);
+    const plannedMembers =
+      planMode === "solo"
+        ? members.filter((member) => member.role === "You")
+        : members.filter((member) => member.included);
 
-    if (!includedMembers.length) {
-      setError("Include at least one family member.");
+    if (!plannedMembers.length) {
+      setError("Include at least one person in this plan.");
       return;
     }
 
@@ -109,16 +117,17 @@ function Grocery() {
       ...location,
       budget: Number(budget),
       foodPreference,
-      members: includedMembers.map((member) => ({
+      planMode,
+      members: plannedMembers.map((member) => ({
         ...member,
+        included: true,
         age: member.age === "" ? null : Number(member.age),
       })),
     };
 
-    localStorage.setItem(
-      "groceryPlanner",
-      JSON.stringify({ ...location, budget, foodPreference, members })
-    );
+    updateCurrentUser({
+      groceryPlanner: { ...location, budget, foodPreference, planMode, members },
+    });
 
     setLoading(true);
 
@@ -163,10 +172,40 @@ function Grocery() {
             🛒 Grocery Planner
           </h1>
           <p className="text-center text-gray-500 mt-2">
-            Family grocery list by age, medical conditions, city, and monthly budget.
+            Plan groceries for yourself only, or for the whole family, within budget.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+            <div className="grid md:grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setPlanMode("solo")}
+                className={`rounded-xl p-4 border-2 font-semibold ${
+                  planMode === "solo"
+                    ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+                    : "border-gray-200"
+                }`}
+              >
+                Just me
+                <p className="text-sm font-normal text-gray-500 mt-1">
+                  Plan only for the logged-in person.
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlanMode("family")}
+                className={`rounded-xl p-4 border-2 font-semibold ${
+                  planMode === "family"
+                    ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+                    : "border-gray-200"
+                }`}
+              >
+                Whole family
+                <p className="text-sm font-normal text-gray-500 mt-1">
+                  Include family members you tick below.
+                </p>
+              </button>
+            </div>
             <div className="grid md:grid-cols-2 gap-4">
               <input
                 type="text"
@@ -227,6 +266,20 @@ function Grocery() {
               </select>
             </div>
 
+            {planMode === "solo" ? (
+              <div className="border rounded-2xl p-4 bg-indigo-50">
+                <h2 className="text-xl font-bold">Your grocery plan</h2>
+                <p className="text-gray-600 mt-2">
+                  {members.find((member) => member.role === "You")?.name || "You"}
+                  {members.find((member) => member.role === "You")?.age
+                    ? ` • ${members.find((member) => member.role === "You").age} yrs`
+                    : ""}
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Family members stay saved, but they are not included in this plan.
+                </p>
+              </div>
+            ) : (
             <div>
               <div className="flex justify-between items-center mb-3">
                 <h2 className="text-xl font-bold">Family List</h2>
@@ -293,6 +346,7 @@ function Grocery() {
                 ))}
               </div>
             </div>
+            )}
 
             {error && (
               <p className="text-red-600 bg-red-50 rounded-xl p-3">{error}</p>

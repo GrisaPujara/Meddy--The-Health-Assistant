@@ -1,8 +1,12 @@
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { getCurrentUser, updateCurrentUser } from "../utils/userStore";
 
 function Location() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isEdit = searchParams.get("edit") === "1";
+  const nextQuery = isEdit ? "?edit=1" : "";
 
   const [location, setLocation] = useState({
     country: "",
@@ -10,6 +14,16 @@ function Location() {
     city: "",
     pinCode: "",
   });
+
+  useEffect(() => {
+    const saved = getCurrentUser().location || {};
+    setLocation({
+      country: saved.country || "",
+      state: saved.state || "",
+      city: saved.city || "",
+      pinCode: saved.pinCode || "",
+    });
+  }, []);
 
   const handleChange = (e) => {
     setLocation({
@@ -22,10 +36,10 @@ function Location() {
     e.preventDefault();
 
     // Save location data
-    localStorage.setItem("location", JSON.stringify(location));
+    updateCurrentUser({ location });
 
     // Go to next page
-    navigate("/health-details");
+    navigate(`/health-details${nextQuery}`);
   };
 
   return (
@@ -40,7 +54,9 @@ function Location() {
         </h2>
 
         <p className="text-center text-gray-500 mt-2">
-          Help Meddy personalize your grocery and nutrition recommendations.
+          {isEdit
+            ? "Edit city and state. Saved values stay filled in."
+            : "Help Meddy personalize your grocery and nutrition recommendations."}
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
@@ -87,7 +103,10 @@ function Location() {
           <div className="flex gap-4">
             <button
               type="button"
-              onClick={() => navigate("/personal-info")}
+              onClick={() => {
+                updateCurrentUser({ location });
+                navigate(`/personal-info${nextQuery}`);
+              }}
               className="w-1/2 bg-gray-300 hover:bg-gray-400 py-3 rounded-xl font-semibold"
             >
               ← Back

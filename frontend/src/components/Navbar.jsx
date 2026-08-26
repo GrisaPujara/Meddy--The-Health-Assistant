@@ -36,6 +36,10 @@ function Navbar() {
             Grocery
           </Link>
 
+          <Link to="/family-health" className="hover:text-indigo-600">
+            Family
+          </Link>
+
           <Link to="/profile" className="hover:text-indigo-600">
             Profile
           </Link>

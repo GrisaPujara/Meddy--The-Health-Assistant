@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { isLoggedIn, loadProfileData } from "../utils/userStore";
 
 function Profile() {
+  const navigate = useNavigate();
   const [user, setUser] = useState({
+    fullName: "",
+    email: "",
     personalInfo: {},
     location: {},
     healthDetails: {},
@@ -9,25 +14,13 @@ function Profile() {
   });
 
   useEffect(() => {
-    const personalInfo =
-      JSON.parse(localStorage.getItem("personalInfo")) || {};
+    if (!isLoggedIn()) {
+      navigate("/login");
+      return;
+    }
 
-    const location =
-      JSON.parse(localStorage.getItem("location")) || {};
-
-    const healthDetails =
-      JSON.parse(localStorage.getItem("healthDetails")) || {};
-
-    const lifestyle =
-      JSON.parse(localStorage.getItem("lifestyle")) || {};
-
-    setUser({
-      personalInfo,
-      location,
-      healthDetails,
-      lifestyle,
-    });
-  }, []);
+    setUser(loadProfileData());
+  }, [navigate]);
 
   // -----------------------------
   // Helper
@@ -88,12 +81,20 @@ function Profile() {
         <div className="mb-8">
 
           <h1 className="text-4xl font-bold text-indigo-600">
-            👤 My Profile
+            Holaa, {user.personalInfo.fullName || user.fullName || user.email || "User"} 👋
           </h1>
 
           <p className="text-gray-500 mt-2">
             Your personal, health and lifestyle information
           </p>
+
+          <button
+            type="button"
+            onClick={() => navigate("/personal-info?edit=1")}
+            className="mt-4 bg-indigo-600 text-white px-5 py-2 rounded-xl font-semibold"
+          >
+            Edit profile
+          </button>
 
         </div>
 

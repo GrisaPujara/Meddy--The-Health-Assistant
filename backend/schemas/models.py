@@ -47,3 +47,39 @@ class NutritionPlanRequest(BaseModel):
     medicalConditions: str = ""
     allergies: str = ""
     familySize: int = 1
+
+
+class FamilyCreateRequest(BaseModel):
+    email: str
+    displayName: str = ""
+    familyName: str = ""
+
+
+class FamilyJoinRequest(BaseModel):
+    email: str
+    displayName: str = ""
+    inviteCode: str
+
+
+class FamilyPersonRequest(BaseModel):
+    email: str
+    name: str
+    role: str = "Family"
+
+
+class ReminderCreateRequest(BaseModel):
+    email: str
+    type: str
+    title: str
+    notes: str = ""
+    personId: str
+    time: str
+    date: str = ""
+    repeat: str = "once"
+
+
+class ReminderUpdateRequest(BaseModel):
+    email: str
+    enabled: Optional[bool] = None
+    title: Optional[str] = None
+    time: Optional[str] = None

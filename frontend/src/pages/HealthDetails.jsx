@@ -1,8 +1,12 @@
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { getCurrentUser, updateCurrentUser } from "../utils/userStore";
 
 function HealthDetails() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isEdit = searchParams.get("edit") === "1";
+  const nextQuery = isEdit ? "?edit=1" : "";
 
   const [health, setHealth] = useState({
     height: "",
@@ -12,6 +16,18 @@ function HealthDetails() {
     allergies: "",
     medicines: "",
   });
+
+  useEffect(() => {
+    const saved = getCurrentUser().healthDetails || {};
+    setHealth({
+      height: saved.height || "",
+      weight: saved.weight || "",
+      bloodGroup: saved.bloodGroup || "",
+      medicalCondition: saved.medicalCondition || "",
+      allergies: saved.allergies || "",
+      medicines: saved.medicines || "",
+    });
+  }, []);
 
   const handleChange = (e) => {
     setHealth({
@@ -24,10 +40,10 @@ function HealthDetails() {
     e.preventDefault();
 
     // Save health details
-    localStorage.setItem("healthDetails", JSON.stringify(health));
+    updateCurrentUser({ healthDetails: health });
 
     // Go to Lifestyle page
-    navigate("/lifestyle");
+    navigate(`/lifestyle${nextQuery}`);
   };
 
   return (
@@ -117,7 +133,10 @@ function HealthDetails() {
 
             <button
               type="button"
-              onClick={() => navigate("/location")}
+              onClick={() => {
+                updateCurrentUser({ healthDetails: health });
+                navigate(`/location${nextQuery}`);
+              }}
               className="w-1/2 bg-gray-300 hover:bg-gray-400 py-3 rounded-xl font-semibold"
             >
               ← Back

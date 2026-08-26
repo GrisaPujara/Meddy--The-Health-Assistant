@@ -19,10 +19,12 @@ import FamilyHealth from "./pages/FamilyHealth";
 import DiseaseLibrary from "./pages/DiseaseLibrary";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import ReminderAlarm from "./components/ReminderAlarm";
 
 function App() {
   return (
     <Router>
+      <ReminderAlarm />
       <Routes>
         {/* Landing Page */}
         <Route path="/" element={<Home />} />

@@ -1,13 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-
-function readJson(key) {
-  try {
-    return JSON.parse(localStorage.getItem(key)) || {};
-  } catch {
-    return {};
-  }
-}
+import { Link, useNavigate } from "react-router-dom";
+import { isLoggedIn, loadProfileData, updateCurrentUser } from "../utils/userStore";
 
 function mapGoal(value) {
   if (value === "Weight Loss") return "Weight Loss";
@@ -16,6 +9,7 @@ function mapGoal(value) {
 }
 
 function Nutrition() {
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     country: "India",
     state: "",
@@ -32,45 +26,53 @@ function Nutrition() {
     medicalConditions: "",
     allergies: "",
     familySize: 1,
+    planMode: "solo",
   });
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const location = readJson("location");
-    const personalInfo = readJson("personalInfo");
-    const healthDetails = readJson("healthDetails");
-    const lifestyle = readJson("lifestyle");
-    const grocery = readJson("groceryPlanner");
-    const saved = readJson("nutritionPlanner");
+    if (!isLoggedIn()) {
+      navigate("/login");
+      return;
+    }
 
-    setForm((current) => ({
-      ...current,
-      ...saved,
-      country: saved.country || location.country || "India",
-      state: saved.state || location.state || "",
-      city: saved.city || location.city || "",
-      pinCode: saved.pinCode || location.pinCode || "",
+    const profile = loadProfileData();
+    const location = profile.location || {};
+    const personalInfo = profile.personalInfo || {};
+    const healthDetails = profile.healthDetails || {};
+    const lifestyle = profile.lifestyle || {};
+    const grocery = profile.groceryPlanner || {};
+    const saved = profile.nutritionPlanner || {};
+
+    setForm({
+      country: location.country || saved.country || "India",
+      state: location.state || saved.state || "",
+      city: location.city || saved.city || "",
+      pinCode: location.pinCode || saved.pinCode || "",
       budget: saved.budget || grocery.budget || "",
       foodPreference:
-        saved.foodPreference || lifestyle.foodPreference || "Vegetarian",
-      goal: saved.goal || mapGoal(lifestyle.fitnessGoal),
-      age: saved.age || personalInfo.age || "",
-      gender: saved.gender || personalInfo.gender || "",
-      height: saved.height || healthDetails.height || "",
-      weight: saved.weight || healthDetails.weight || "",
-      activityLevel: saved.activityLevel || lifestyle.activityLevel || "",
+        lifestyle.foodPreference || saved.foodPreference || "Vegetarian",
+      goal: mapGoal(lifestyle.fitnessGoal) || saved.goal || "Weight Stability",
+      age: personalInfo.age || saved.age || "",
+      gender: personalInfo.gender || saved.gender || "",
+      height: healthDetails.height || saved.height || "",
+      weight: healthDetails.weight || saved.weight || "",
+      activityLevel: lifestyle.activityLevel || saved.activityLevel || "",
       medicalConditions:
-        saved.medicalConditions || healthDetails.medicalCondition || "",
-      allergies: saved.allergies || healthDetails.allergies || "",
+        healthDetails.medicalCondition || saved.medicalConditions || "",
+      allergies: healthDetails.allergies || saved.allergies || "",
       familySize:
-        saved.familySize ||
-        grocery.members?.filter((member) => member.included).length ||
-        lifestyle.familyMembers ||
-        1,
-    }));
-  }, []);
+        saved.planMode === "family"
+          ? grocery.members?.filter((member) => member.included).length ||
+            lifestyle.familyMembers ||
+            saved.familySize ||
+            1
+          : 1,
+      planMode: saved.planMode || "solo",
+    });
+  }, [navigate]);
 
   const handleChange = (e) => {
     setForm({
@@ -84,16 +86,17 @@ function Nutrition() {
     setError("");
     setPlan(null);
 
+    const isSolo = form.planMode === "solo";
     const payload = {
       ...form,
       budget: Number(form.budget),
       age: form.age === "" ? null : Number(form.age),
       height: form.height === "" ? null : Number(form.height),
       weight: form.weight === "" ? null : Number(form.weight),
-      familySize: Number(form.familySize) || 1,
+      familySize: isSolo ? 1 : Number(form.familySize) || 1,
     };
 
-    localStorage.setItem("nutritionPlanner", JSON.stringify(form));
+    updateCurrentUser({ nutritionPlanner: form });
     setLoading(true);
 
     try {
@@ -137,10 +140,40 @@ function Nutrition() {
             🥗 Nutrition Planner
           </h1>
           <p className="text-center text-gray-500 mt-2">
-            City-based diet plans for weight gain, weight loss, or stability — kept under budget.
+            Diet plans for just you, or the household, kept under budget.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+            <div className="grid md:grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, planMode: "solo", familySize: 1 })}
+                className={`rounded-xl p-4 border-2 font-semibold ${
+                  form.planMode === "solo"
+                    ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+                    : "border-gray-200"
+                }`}
+              >
+                Just me
+                <p className="text-sm font-normal text-gray-500 mt-1">
+                  Calories and meals for the logged-in person only.
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, planMode: "family" })}
+                className={`rounded-xl p-4 border-2 font-semibold ${
+                  form.planMode === "family"
+                    ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+                    : "border-gray-200"
+                }`}
+              >
+                Whole family
+                <p className="text-sm font-normal text-gray-500 mt-1">
+                  Scale meals for the household size you enter.
+                </p>
+              </button>
+            </div>
             <div className="grid md:grid-cols-2 gap-4">
               <input
                 type="text"
@@ -211,6 +244,7 @@ function Nutrition() {
                 onChange={handleChange}
                 className="w-full border rounded-xl p-3"
               />
+              {form.planMode === "family" && (
               <input
                 type="number"
                 name="familySize"
@@ -220,6 +254,7 @@ function Nutrition() {
                 onChange={handleChange}
                 className="w-full border rounded-xl p-3"
               />
+              )}
               <input
                 type="number"
                 name="height"

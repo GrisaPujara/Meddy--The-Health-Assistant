@@ -1,7 +1,9 @@
 import { useNavigate } from "react-router-dom";
+import { hasCompletedProfile } from "../utils/userStore";
 
 function HealthProfile() {
   const navigate = useNavigate();
+  const canEdit = hasCompletedProfile();
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
@@ -22,8 +24,9 @@ function HealthProfile() {
           </p>
 
           <p className="text-gray-500">
-            This information is collected only once and helps Meddy provide
+            This information helps Meddy provide
             personalized nutrition, grocery planning, and health recommendations.
+            You can edit it later without filling everything from scratch.
           </p>
         </div>
 
@@ -39,10 +42,12 @@ function HealthProfile() {
         </div>
 
         <button
-          onClick={() => navigate("/personal-info")}
+          onClick={() =>
+            navigate(canEdit ? "/personal-info?edit=1" : "/personal-info")
+          }
           className="mt-10 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-lg font-semibold transition"
         >
-          Start Setup →
+          {canEdit ? "Edit profile →" : "Start Setup →"}
         </button>
 
       </div>

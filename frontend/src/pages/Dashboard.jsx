@@ -1,8 +1,12 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { isLoggedIn, loadProfileData, logout } from "../utils/userStore";
 
 function Dashboard() {
+  const navigate = useNavigate();
   const [user, setUser] = useState({
+    fullName: "",
+    email: "",
     personalInfo: {},
     location: {},
     healthDetails: {},
@@ -10,25 +14,13 @@ function Dashboard() {
   });
 
   useEffect(() => {
-    const personalInfo =
-      JSON.parse(localStorage.getItem("personalInfo")) || {};
+    if (!isLoggedIn()) {
+      navigate("/login");
+      return;
+    }
 
-    const location =
-      JSON.parse(localStorage.getItem("location")) || {};
-
-    const healthDetails =
-      JSON.parse(localStorage.getItem("healthDetails")) || {};
-
-    const lifestyle =
-      JSON.parse(localStorage.getItem("lifestyle")) || {};
-
-    setUser({
-      personalInfo,
-      location,
-      healthDetails,
-      lifestyle,
-    });
-  }, []);
+    setUser(loadProfileData());
+  }, [navigate]);
 
   const height = Number(user.healthDetails.height || 0);
   const weight = Number(user.healthDetails.weight || 0);
@@ -75,6 +67,10 @@ function Dashboard() {
             Grocery
           </Link>
 
+          <Link to="/family-health" className="hover:text-indigo-600">
+            Family
+          </Link>
+
           <Link to="/chat" className="hover:text-indigo-600">
             AI Chat
           </Link>
@@ -82,6 +78,17 @@ function Dashboard() {
           <Link to="/profile" className="hover:text-indigo-600">
             Profile
           </Link>
+
+          <button
+            type="button"
+            onClick={() => {
+              logout();
+              navigate("/login");
+            }}
+            className="hover:text-indigo-600"
+          >
+            Logout
+          </button>
 
         </div>
 
@@ -94,7 +101,7 @@ function Dashboard() {
         <div className="bg-gradient-to-r from-indigo-600 to-blue-500 text-white rounded-3xl p-10">
 
           <h2 className="text-4xl font-bold">
-            👋 Welcome, {user.personalInfo.fullName || "User"}
+            Holaa, {user.personalInfo.fullName || user.fullName || user.email || "User"} 👋
           </h2>
 
           <p className="mt-4 text-lg">
@@ -106,6 +113,14 @@ function Dashboard() {
             Age : {user.personalInfo.age || "--"} | Gender :{" "}
             {user.personalInfo.gender || "--"}
           </p>
+
+          <button
+            type="button"
+            onClick={() => navigate("/personal-info?edit=1")}
+            className="mt-6 bg-white text-indigo-600 px-5 py-2 rounded-xl font-semibold"
+          >
+            Edit profile
+          </button>
 
         </div>
 

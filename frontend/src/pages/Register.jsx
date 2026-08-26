@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { registerAccount } from "../utils/userStore";
 
 function Register() {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ function Register() {
     password: "",
     confirmPassword: "",
   });
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     setFormData({
@@ -21,14 +23,23 @@ function Register() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    setError("");
+
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match");
+      setError("Passwords do not match");
       return;
     }
 
-    localStorage.setItem("register", JSON.stringify(formData));
-
-    navigate("/health-profile");
+    try {
+      registerAccount({
+        fullName: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+      });
+      navigate("/health-profile");
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
@@ -84,6 +95,10 @@ function Register() {
             className="w-full border rounded-xl p-3"
             required
           />
+
+          {error && (
+            <p className="text-red-600 bg-red-50 rounded-xl p-3 text-sm">{error}</p>
+          )}
 
           <button
             type="submit"
