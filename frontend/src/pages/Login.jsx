@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { hasCompletedProfile, loginAccount } from "../utils/userStore";
+import { requestLocationAfterLogin } from "../utils/locationAccess";
 
 function Login() {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ function Login() {
 
     try {
       const user = loginAccount(formData.email, formData.password);
+      requestLocationAfterLogin();
 
       if (hasCompletedProfile(user)) {
         navigate("/dashboard");

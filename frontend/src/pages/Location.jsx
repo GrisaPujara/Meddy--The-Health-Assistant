@@ -1,6 +1,7 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getCurrentUser, updateCurrentUser } from "../utils/userStore";
+import { saveDetectedLocation } from "../utils/locationAccess";
 
 function Location() {
   const navigate = useNavigate();
@@ -15,6 +16,8 @@ function Location() {
     pinCode: "",
   });
 
+  const [status, setStatus] = useState("");
+
   useEffect(() => {
     const saved = getCurrentUser().location || {};
     setLocation({
@@ -22,6 +25,9 @@ function Location() {
       state: saved.state || "",
       city: saved.city || "",
       pinCode: saved.pinCode || "",
+      lat: saved.lat || "",
+      lng: saved.lng || "",
+      source: saved.source || "",
     });
   }, []);
 
@@ -60,6 +66,28 @@ function Location() {
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+
+          <button
+            type="button"
+            onClick={async () => {
+              setStatus("Detecting your location...");
+              try {
+                const detected = await saveDetectedLocation();
+                setLocation((current) => ({ ...current, ...detected }));
+                setStatus("Location filled from GPS. You can still edit it.");
+              } catch (err) {
+                setStatus(
+                  err.message ||
+                    "Could not access location. Allow location in the browser, or type it below."
+                );
+              }
+            }}
+            className="w-full bg-indigo-50 text-indigo-700 py-3 rounded-xl font-semibold"
+          >
+            Use my current location
+          </button>
+
+          {status && <p className="text-sm text-gray-600">{status}</p>}
 
           <input
             type="text"

@@ -21,6 +21,7 @@ function emptyUser() {
     lifestyle: {},
     groceryPlanner: {},
     nutritionPlanner: {},
+    isPremium: false,
   };
 }
 
@@ -97,6 +98,7 @@ export function loadProfileData() {
     lifestyle: user.lifestyle || {},
     groceryPlanner: user.groceryPlanner || {},
     nutritionPlanner: user.nutritionPlanner || {},
+    isPremium: Boolean(user.isPremium),
   };
 }
 
@@ -136,6 +138,7 @@ export function registerAccount({ fullName, email, password }) {
     lifestyle: {},
     groceryPlanner: {},
     nutritionPlanner: {},
+    isPremium: false,
   };
 
   accounts.push(user);

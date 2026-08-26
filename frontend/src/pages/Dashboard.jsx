@@ -107,6 +107,7 @@ function Dashboard() {
           <p className="mt-4 text-lg">
             {user.location.city || "--"},{" "}
             {user.location.state || "--"}
+            {user.location.source === "gps" ? " • GPS" : ""}
           </p>
 
           <p className="mt-2">
@@ -306,6 +307,18 @@ function Dashboard() {
 
             <h3 className="text-xl font-bold mt-4">
               Disease Library
+            </h3>
+
+          </Link>
+
+          <Link
+            to="/premium"
+            className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-2xl transition"
+          >
+            <div className="text-5xl">⭐</div>
+
+            <h3 className="text-xl font-bold mt-4">
+              Premium
             </h3>
 
           </Link>

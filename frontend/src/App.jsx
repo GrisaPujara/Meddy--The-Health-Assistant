@@ -18,13 +18,16 @@ import Grocery from "./pages/Grocery";
 import FamilyHealth from "./pages/FamilyHealth";
 import DiseaseLibrary from "./pages/DiseaseLibrary";
 import Profile from "./pages/Profile";
+import Premium from "./pages/Premium";
 import NotFound from "./pages/NotFound";
 import ReminderAlarm from "./components/ReminderAlarm";
+import LocationAccess from "./components/LocationAccess";
 
 function App() {
   return (
     <Router>
       <ReminderAlarm />
+      <LocationAccess />
       <Routes>
         {/* Landing Page */}
         <Route path="/" element={<Home />} />
@@ -50,6 +53,7 @@ function App() {
         <Route path="/family-health" element={<FamilyHealth />} />
         <Route path="/disease-library" element={<DiseaseLibrary />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/premium" element={<Premium />} />
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />

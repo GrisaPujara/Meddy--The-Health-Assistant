@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { isLoggedIn, loadProfileData } from "../utils/userStore";
+import { saveDetectedLocation } from "../utils/locationAccess";
 
 function Profile() {
   const navigate = useNavigate();
@@ -169,6 +170,21 @@ function Profile() {
             📍 Location
           </h2>
 
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await saveDetectedLocation();
+                setUser(loadProfileData());
+              } catch {
+                alert("Allow location in the browser, or edit it in your profile.");
+              }
+            }}
+            className="mb-6 bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl font-semibold"
+          >
+            Update from GPS
+          </button>
+
           <div className="grid md:grid-cols-2 gap-6">
 
             <div>
@@ -211,6 +227,18 @@ function Profile() {
 
               <p className="font-semibold text-lg">
                 {showValue(user.location.pinCode)}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-gray-500 text-sm">
+                GPS
+              </p>
+
+              <p className="font-semibold text-lg">
+                {user.location.lat
+                  ? `${Number(user.location.lat).toFixed(4)}, ${Number(user.location.lng).toFixed(4)}`
+                  : "--"}
               </p>
             </div>
 
